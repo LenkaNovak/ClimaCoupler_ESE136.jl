@@ -8,7 +8,7 @@ import ClimaCoupler.Regridder: binary_mask
 include("TestHelper.jl")
 
 # sea ice
-include("../experiments/AMIP/modular/components/ocean/slab_seaice_init.jl")
+include("../experiments/AMIP/components/ocean/slab_seaice_init.jl")
 
 for FT in (Float32, Float64)
     @testset "test sea-ice energy slab for FT=$FT" begin
