@@ -31,6 +31,7 @@ docs/src/generated/
 !experiments/AMIP/**/Manifest.toml
 !experiments/ClimaCore/sea_breeze/Manifest.toml
 !perf/Manifest.toml
+!Manifest.toml
 
 # Data
 *.vtk
