@@ -81,19 +81,13 @@ if isinteractive()
 end
 
 ## read in some parsed command line arguments
-mode_name = parsed_args["mode_name"]
 run_name = parsed_args["run_name"]
 energy_check = parsed_args["energy_check"]
-if !(@isdefined FT)
-    const FT = parsed_args["FLOAT_TYPE"] == "Float64" ? Float64 : Float32
-end
-land_sim_name = "bucket"
 t_end = Int(time_to_seconds(parsed_args["t_end"]))
 tspan = (Int(0), t_end)
 Δt_cpl = Int(parsed_args["dt_cpl"])
 saveat = time_to_seconds(parsed_args["dt_save_to_sol"])
 date0 = date = DateTime(parsed_args["start_date"], dateformat"yyyymmdd")
-mono_surface = parsed_args["mono_surface"]
 
 import ClimaCoupler
 import ClimaCoupler.Regridder
@@ -108,20 +102,11 @@ import ClimaCoupler.Diagnostics: get_var, init_diagnostics, accumulate_diagnosti
 import ClimaCoupler.PostProcessor: postprocess
 
 pkg_dir = pkgdir(ClimaCoupler)
-COUPLER_OUTPUT_DIR = joinpath(pkg_dir, "experiments/aquaplanet/output", joinpath(mode_name, run_name))
+COUPLER_OUTPUT_DIR = joinpath(pkg_dir, "experiments/aquaplanet/output", joinpath("simple_aquaplanet", run_name))
 mkpath(COUPLER_OUTPUT_DIR)
-
-REGRID_DIR = joinpath(COUPLER_OUTPUT_DIR, "regrid_tmp/")
-mkpath(REGRID_DIR)
 
 @info COUPLER_OUTPUT_DIR
 @info parsed_args
-
-## get the paths to the necessary data files: land-sea mask, sst map, sea ice concentration
-include(joinpath(pkgdir(ClimaCoupler), "artifacts", "artifact_funcs.jl"))
-sst_data = joinpath(sst_dataset_path(), "sst.nc")
-sic_data = joinpath(sic_dataset_path(), "sic.nc")
-land_mask_data = joinpath(mask_dataset_path(), "seamask.nc")
 
 ## import coupler utils
 include("components/flux_calculator.jl")
@@ -150,41 +135,14 @@ atmosphere and surface are of the same horizontal resolution.
 ## init a 2D bounary space at the surface
 boundary_space = atmos_sim.domain.face_space.horizontal_space
 
-# init land-sea fraction
-land_fraction =
-    Regridder.land_fraction(FT, REGRID_DIR, comms_ctx, land_mask_data, "LSMASK", boundary_space, mono = mono_surface)
-
 ## init surface (slab) model components
 include("components/slab_utils.jl")
-include("components/land/bucket_init.jl")
-include("components/land/bucket_utils.jl")
 include("components/ocean/slab_ocean_init.jl")
-include("components/ocean/slab_seaice_init.jl")
 
 #=
-### Land
-We use `ClimaLSM.jl`'s bucket model.
-=#
-land_sim = bucket_init(
-    FT,
-    FT.(tspan),
-    parsed_args["config"],
-    parsed_args["albedo_from_file"],
-    comms_ctx,
-    REGRID_DIR;
-    dt = FT(Δt_cpl),
-    space = boundary_space,
-    saveat = FT(saveat),
-)
-
-#=
-### Ocean and Sea Ice
-In the `AMIP` mode, all ocean properties are prescribed from a file, while sea-ice temperatures are calculated using observed
-SIC and assuming a 2m thickness of the ice.
-
+### Ocean
 In the `SlabPlanet` mode, all ocean and sea ice are dynamical models, namely thermal slabs, with different parameters.
 =#
-
 
 ## ocean
 ocean_sim = ocean_init(
@@ -308,29 +266,6 @@ function solve_coupler!(cs)
             @show(cs.dates.date[1])
         end
 
-        if cs.mode.name == "amip"
-
-            ## monthly read of boundary condition data for SST and SIC
-            if cs.dates.date[1] >= next_date_in_file(cs.mode.SST_info)
-                update_midmonth_data!(cs.dates.date[1], cs.mode.SST_info)
-            end
-            SST = ocean_sim.integrator.u.T_sfc .= interpolate_midmonth_to_daily(cs.dates.date[1], cs.mode.SST_info)
-
-            if cs.dates.date[1] >= next_date_in_file(cs.mode.SIC_info)
-                update_midmonth_data!(cs.dates.date[1], cs.mode.SIC_info)
-            end
-            SIC = interpolate_midmonth_to_daily(cs.dates.date[1], cs.mode.SIC_info)
-
-            ice_fraction = ice_sim.integrator.p.ice_fraction .= get_ice_fraction.(SIC_init, mono_surface)
-
-            ## calculate and accumulate diagnostics at each timestep
-            accumulate_diagnostics!(cs)
-
-            ## save and reset monthly averages
-            save_diagnostics(cs)
-
-        end
-
         ## compute global energy
         !isnothing(cs.conservation_checks) ? check_conservation!(cs, get_slab_energy, get_land_energy) : nothing
 
@@ -342,21 +277,9 @@ function solve_coupler!(cs)
         step!(atmos_sim.integrator, t - atmos_sim.integrator.t, true) # NOTE: instead of Δt_cpl, to avoid accumulating roundoff error
         atmos_push!(cs)
 
-        ## 2. land
-        land_pull!(cs)
-        step!(land_sim.integrator, t - land_sim.integrator.t, true)
-
-        ## 3. ocean
-        if cs.mode.name == "slabplanet"
-            ocean_pull!(cs)
-            step!(ocean_sim.integrator, t - ocean_sim.integrator.t, true)
-        end
-
-        ## 4. sea ice
-        if cs.mode.name == "amip"
-            ice_pull!(cs)
-            step!(ice_sim.integrator, t - ice_sim.integrator.t, true)
-        end
+        ## 2. ocean
+        ocean_pull!(cs)
+        step!(ocean_sim.integrator, t - ocean_sim.integrator.t, true)
 
         ## step to the next calendar month
         if trigger_callback(cs, Monthly())
