@@ -216,8 +216,10 @@ uuid = "c8b6d40d-e815-466f-95ae-c48aefa668fa"
 version = "0.7.1"
 
 [[deps.ClimaLSM]]
-deps = ["ArtifactWrappers", "CLIMAParameters", "ClimaComms", "ClimaCore", "ClimaCoreTempestRemap", "Dates", "DocStringExtensions", "IntervalSets", "JLD2", "NCDatasets", "StaticArrays", "SurfaceFluxes", "Thermodynamics", "UnPack"]
-git-tree-sha1 = "540525b7c66da34abc62245fdf622117da26a44b"
+deps = ["ArtifactWrappers", "CLIMAParameters", "ClimaComms", "ClimaCore", "ClimaCoreTempestRemap", "Dates", "DocStringExtensions", "Insolation", "IntervalSets", "JLD2", "NCDatasets", "StaticArrays", "SurfaceFluxes", "Thermodynamics", "UnPack"]
+git-tree-sha1 = "ed8cbc98f78a57702312f50291469bb18c4caf14"
+repo-rev = "main"
+repo-url = "https://github.com/CliMA/ClimaLSM.jl.git"
 uuid = "7884a58f-fab6-4fd0-82bb-ecfedb2d8430"
 version = "0.2.2"
 
