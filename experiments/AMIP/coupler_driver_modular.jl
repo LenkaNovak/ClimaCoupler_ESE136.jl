@@ -71,16 +71,16 @@ end
 ## modify parsed args for fast testing from REPL #hide
 if isinteractive()
     parsed_args["coupled"] = true #hide
-    parsed_args["surface_scheme"] = "monin_obukhov" #hide
+    parsed_args["surface_scheme"] = "bulk" #hide
     parsed_args["moist"] = "equil" #hide
     parsed_args["vert_diff"] = true #hide
     parsed_args["rad"] = "gray" #hide
     parsed_args["energy_check"] = true #hide
     parsed_args["mode_name"] = "slabplanet" #hide
     parsed_args["t_end"] = "10days" #hide
-    parsed_args["dt_save_to_sol"] = "3600secs" #hide
-    parsed_args["dt_cpl"] = 200 #hide
-    parsed_args["dt"] = "200secs" #hide
+    parsed_args["dt_save_to_sol"] = "864000secs" #hide
+    parsed_args["dt_cpl"] = 600 #hide
+    parsed_args["dt"] = "600secs" #hide
     parsed_args["mono_surface"] = true #hide
     parsed_args["h_elem"] = 4 #hide
     # parsed_args["dt_save_restart"] = "5days" #hide
@@ -157,9 +157,10 @@ atmosphere and surface are of the same horizontal resolution.
 ## init a 2D bounary space at the surface
 boundary_space = atmos_sim.domain.face_space.horizontal_space
 
+
 # init land-sea fraction
-land_fraction =
-    Regridder.land_fraction(FT, REGRID_DIR, comms_ctx, land_mask_data, "LSMASK", boundary_space, mono = mono_surface)
+land_fraction = zeros(boundary_space) # no land
+#    Regridder.land_fraction(FT, REGRID_DIR, comms_ctx, land_mask_data, "LSMASK", boundary_space, mono = mono_surface)
 
 ## init surface (slab) model components
 include("components/slab_utils.jl")

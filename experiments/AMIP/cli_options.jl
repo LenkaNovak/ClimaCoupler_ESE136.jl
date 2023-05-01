@@ -360,9 +360,11 @@ function parse_commandline()
         help = "A flag for analyzing performance [`PerfStandard` (default), `PerfExperimental`]"
         arg_type = String
         default = "PerfStandard"
-        "arg1"
-        help = "a positional argument"
-        required = true
+        if Sys.MACHINE !== :Darwin # this should be generalized
+            "arg1"
+            help = "a positional argument"
+            required = true
+        end
     end
     parsed_args = ArgParse.parse_args(ARGS, s)
     return (s, parsed_args)
