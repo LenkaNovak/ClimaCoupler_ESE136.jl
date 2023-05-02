@@ -77,14 +77,15 @@ if isinteractive()
     parsed_args["rad"] = "gray" #hide
     parsed_args["energy_check"] = true #hide
     parsed_args["mode_name"] = "slabplanet" #hide
-    parsed_args["t_end"] = "10days" #hide
-    parsed_args["dt_save_to_sol"] = "864000secs" #hide
+    parsed_args["t_end"] = "30days" #hide
+    parsed_args["dt_save_to_sol"] = "86400secs" #hide
     parsed_args["dt_cpl"] = 600 #hide
     parsed_args["dt"] = "600secs" #hide
     parsed_args["mono_surface"] = true #hide
     parsed_args["h_elem"] = 4 #hide
     # parsed_args["dt_save_restart"] = "5days" #hide
     parsed_args["precip_model"] = "0M" #hide
+    parsed_args["albedo_from_file"] = false
 end
 
 ## read in some parsed command line arguments
@@ -470,7 +471,7 @@ if ClimaComms.iamroot(comms_ctx)
     ## sample animations
     if !is_distributed && parsed_args["anim"]
         @info "Animations"
-        include("user_io/viz_explorer.jl")
+        include("experiments/AMIP/user_io/viz_explorer.jl")
         plot_anim(cs, COUPLER_OUTPUT_DIR * "_artifacts")
     end
 
